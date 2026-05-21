@@ -1,0 +1,12 @@
+{
+  "name": "pet-portrait-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
+  }
+}
