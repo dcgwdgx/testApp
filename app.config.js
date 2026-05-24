@@ -25,6 +25,7 @@ module.exports = {
     ios: {
       supportsTablet: false,
       bundleIdentifier: 'com.petportrait.ai',
+      buildNumber: process.env.IOS_BUILD_NUMBER || '1',
       infoPlist: {
         NSPhotoLibraryUsageDescription: 'We need access to your photo library so you can upload pet photos.',
         NSPhotoLibraryAddUsageDescription: 'We need permission to save your AI portraits to your gallery.',

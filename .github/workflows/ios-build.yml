@@ -22,9 +22,10 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Build iOS
-        run: eas build --platform ios --profile production --local --non-interactive --build-number=${{ github.run_number }}
+        run: eas build --platform ios --profile production --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
 
       - name: List build output
         run: find . -name "*.ipa" -type f 2>/dev/null || echo "searching..."
