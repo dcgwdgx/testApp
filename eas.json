@@ -17,8 +17,7 @@
       }
     },
     "production": {
-      "distribution": "store",
-      "autoIncrement": true
+      "distribution": "store"
     },
     "simulator": {
       "distribution": "internal",
