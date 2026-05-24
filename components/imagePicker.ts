@@ -1,7 +1,7 @@
 import { launchImageLibraryAsync, MediaTypeOptions } from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
-const MAX_SIZE = 384;
+const MAX_SIZE = 512;
 const JPEG_QUALITY = 0.8;
 
 export async function pickAndResizeImage(): Promise<{ uri: string; base64: string }> {
