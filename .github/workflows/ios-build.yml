@@ -21,6 +21,9 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
+      - name: Check Xcode versions
+        run: ls /Applications/ | grep Xcode && xcodebuild -version
+
       - name: Build iOS
         run: eas build --platform ios --profile production --local --non-interactive
         env:
