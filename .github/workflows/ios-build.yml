@@ -1,8 +1,6 @@
-name: iOS Build
+name: iOS Local Build
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -21,7 +19,10 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build iOS
-        run: eas build --platform ios --profile preview --non-interactive
+      - name: Install CocoaPods
+        run: brew install cocoapods
+
+      - name: Build iOS locally
+        run: eas build --platform ios --profile preview --local --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
