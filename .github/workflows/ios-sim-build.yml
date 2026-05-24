@@ -1,12 +1,10 @@
-name: iOS Build
+name: iOS Simulator Build (Debug)
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
-  ios:
+  simulator:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +19,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build iOS
-        run: eas build --platform ios --profile preview --non-interactive
+      - name: Build iOS Simulator
+        run: eas build --platform ios --profile simulator --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
