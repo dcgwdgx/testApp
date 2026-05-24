@@ -23,7 +23,7 @@ module.exports = {
       permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'],
     },
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: 'com.petportrait.ai',
       infoPlist: {
         NSPhotoLibraryUsageDescription: 'We need access to your photo library so you can upload pet photos.',
