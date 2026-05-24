@@ -43,7 +43,7 @@ export async function generatePortrait(
         model: 'doubao-seedream-5-0-lite-260128',
         prompt,
         image: [`data:image/jpeg;base64,${imageBase64}`],
-        size: '2k',
+        size: '1k',
         response_format: 'b64_json',
         watermark: false,
         sample_strength: strength,
