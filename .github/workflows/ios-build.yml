@@ -1,4 +1,4 @@
-name: iOS Simulator Build
+name: iOS Build
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  simulator:
+  ios:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,23 +21,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build iOS Simulator
-        run: eas build --platform ios --profile simulator --non-interactive
+      - name: Build iOS
+        run: eas build --platform ios --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Download build
-        uses: actions/download-artifact@v4
-        if: always()
-        with:
-          name: ios-simulator-build
-          path: build-output
-        continue-on-error: true
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ios-simulator-build
-          path: build-output
-        continue-on-error: true
