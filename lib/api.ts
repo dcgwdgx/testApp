@@ -91,8 +91,10 @@ export async function generatePortrait(
       return `data:image/jpeg;base64,${b64}`;
     } catch (err: any) {
       lastError = err;
-      if (err.name === 'AbortError' && !params.signal?.aborted) continue;
-      if (err.message.includes('Server error (4') || err.message.includes('Server error (5')) continue;
+      // Always retry on: timeout, network errors, server errors
+      // Never retry if user cancelled
+      if (err.name === 'AbortError' && params.signal?.aborted) throw err;
+      if (attempt < MAX_RETRIES) continue;
       throw err;
     }
   }

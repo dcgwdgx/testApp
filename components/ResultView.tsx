@@ -6,7 +6,7 @@ import {
 import { shareAsync } from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
-import { Paths, File as ExpoFile } from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import ComparisonSlider from './ComparisonSlider';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
 
@@ -24,14 +24,13 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
   const [viewMode, setViewMode] = useState<ViewMode>('result');
   const [saving, setSaving] = useState(false);
 
-  const writeFile = async () => {
-    const rawBase64 = imageUrl.replace(/^data:image\/\w+;base64,/, '');
-    const bytes = Uint8Array.from(atob(rawBase64), (c) => c.charCodeAt(0));
-    const file = new ExpoFile(Paths.cache, 'portrait.jpg');
-    const writer = file.writableStream().getWriter();
-    await writer.write(bytes);
-    await writer.close();
-    return file.uri;
+  const writeFile = async (): Promise<string> => {
+    const result = await manipulateAsync(
+      imageUrl,
+      [], // no transforms
+      { format: SaveFormat.JPEG, compress: 1 },
+    );
+    return result.uri;
   };
 
   const handleShare = async () => {
