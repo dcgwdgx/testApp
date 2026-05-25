@@ -2,6 +2,7 @@ import { ARK_API_KEY } from './config';
 
 const API_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
 const TIMEOUT_MS = 120_000;
+const MAX_RETRIES = 2;
 
 interface GenerateParams {
   imageBase64: string;
@@ -15,24 +16,18 @@ interface ArkResponse {
   error?: { message: string; code: string };
 }
 
-export async function generatePortrait(
+async function fetchOnce(
   { imageBase64, prompt, strength, signal }: GenerateParams,
-  onProgress?: (status: string) => void,
-): Promise<string> {
-  onProgress?.('starting');
-
+  attempt: number,
+): Promise<ArkResponse> {
   const controller = new AbortController();
-  const linkedSignal = signal;
-
-  if (linkedSignal) {
-    linkedSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    onProgress?.('processing');
-
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -58,20 +53,53 @@ export async function generatePortrait(
       throw new Error(`Server error (${res.status})${detail || '. Please try again.'}`);
     }
 
-    const data: ArkResponse = await res.json();
-
-    if (data.error) {
-      throw new Error(data.error.message || 'Generation failed');
-    }
-
-    const b64 = data.data?.[0]?.b64_json;
-    if (!b64) {
-      throw new Error('No image returned. Please try again.');
-    }
-
-    onProgress?.('succeeded');
-    return `data:image/jpeg;base64,${b64}`;
+    return res.json();
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+export async function generatePortrait(
+  params: GenerateParams,
+  onProgress?: (status: string) => void,
+): Promise<string> {
+  onProgress?.('starting');
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        onProgress?.(`processing (retry ${attempt})`);
+        await sleep(2000);
+      } else {
+        onProgress?.('processing');
+      }
+
+      const data = await fetchOnce(params, attempt);
+
+      if (data.error) {
+        throw new Error(data.error.message || 'Generation failed');
+      }
+
+      const b64 = data.data?.[0]?.b64_json;
+      if (!b64) {
+        throw new Error('No image returned. Please try again.');
+      }
+
+      onProgress?.('succeeded');
+      return `data:image/jpeg;base64,${b64}`;
+    } catch (err: any) {
+      lastError = err;
+      if (err.name === 'AbortError' && !params.signal?.aborted) continue;
+      if (err.message.includes('Server error (4') || err.message.includes('Server error (5')) continue;
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('Generation failed after retries. Please try again.');
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
