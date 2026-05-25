@@ -6,6 +6,7 @@ import {
 import { shareAsync } from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
+import { Paths, File as ExpoFile } from 'expo-file-system';
 import ComparisonSlider from './ComparisonSlider';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
 
@@ -23,9 +24,20 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
   const [viewMode, setViewMode] = useState<ViewMode>('result');
   const [saving, setSaving] = useState(false);
 
+  const writeFile = async () => {
+    const rawBase64 = imageUrl.replace(/^data:image\/\w+;base64,/, '');
+    const bytes = Uint8Array.from(atob(rawBase64), (c) => c.charCodeAt(0));
+    const file = new ExpoFile(Paths.cache, 'portrait.jpg');
+    const writer = file.writableStream().getWriter();
+    await writer.write(bytes);
+    await writer.close();
+    return file.uri;
+  };
+
   const handleShare = async () => {
     try {
-      await shareAsync(imageUrl, { dialogTitle: 'Share your pet portrait' });
+      const fileUri = await writeFile();
+      await shareAsync(fileUri, { dialogTitle: 'Share your pet portrait' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
       if (err.message !== 'User cancelled') {
@@ -45,7 +57,8 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
         ]);
         return;
       }
-      await MediaLibrary.saveToLibraryAsync(imageUrl);
+      const fileUri = await writeFile();
+      await MediaLibrary.saveToLibraryAsync(fileUri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Saved!', 'Your portrait has been saved to your gallery.');
     } catch {
