@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { purchaseUnlock } from '../lib/purchases';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
@@ -23,6 +23,11 @@ export default function Paywall({ visible, onClose, onPurchased, freeCount, free
     if (ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onPurchased();
+    } else {
+      Alert.alert(
+        'Purchase Failed',
+        'Could not process the purchase. Make sure you are using a Sandbox test account (Settings → App Store → Sandbox Account).',
+      );
     }
   };
 

@@ -54,9 +54,9 @@ export async function purchaseUnlock(): Promise<boolean> {
   }
   try {
     await InAppPurchases.purchaseItemAsync(PRODUCT_ID);
-    // Result comes via purchase listener below
     return true;
-  } catch {
+  } catch (err: any) {
+    console.log('IAP purchase error:', err?.message || err);
     return false;
   }
 }
