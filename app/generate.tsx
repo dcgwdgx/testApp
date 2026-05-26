@@ -1,10 +1,11 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import StylePicker from '../components/StylePicker';
 import StrengthSlider from '../components/StrengthSlider';
 import LoadingOverlay from '../components/LoadingOverlay';
+import Paywall from '../components/Paywall';
 import { pickAndResizeImage } from '../components/imagePicker';
 import { generatePortrait } from '../lib/api';
 import { setCachedImage, setCachedOriginalUri } from '../lib/cache';
@@ -12,6 +13,9 @@ import { getCachedPhoto, setCachedPhoto } from '../lib/photoCache';
 import { saveToHistory } from '../lib/history';
 import { STYLES, type Style } from '../lib/styles';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
+import { initPurchases, listenForPurchases, hasFreeGenerationsLeft, hasPurchased, incrementFreeUsage } from '../lib/purchases';
+
+const FREE_LIMIT = 3;
 
 export default function GenerateScreen() {
   const router = useRouter();
@@ -21,6 +25,21 @@ export default function GenerateScreen() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [purchased, setPurchased] = useState(false);
+  const [freeUsed, setFreeUsed] = useState(0);
+
+  useEffect(() => {
+    initPurchases();
+    listenForPurchases(() => {
+      setPurchased(true);
+      setShowPaywall(false);
+    });
+    (async () => {
+      const owned = await hasPurchased();
+      setPurchased(owned);
+    })();
+  }, []);
 
   const handlePickImage = useCallback(async () => {
     try {
@@ -45,6 +64,15 @@ export default function GenerateScreen() {
   const handleGenerate = useCallback(async () => {
     if (!image || !selectedStyle || loading) return;
 
+    // Check free usage
+    if (!purchased) {
+      const free = await hasFreeGenerationsLeft();
+      if (!free) {
+        setShowPaywall(true);
+        return;
+      }
+    }
+
     setLoading(true);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -66,7 +94,6 @@ export default function GenerateScreen() {
       setCachedImage(resultUrl);
       setCachedOriginalUri(image.uri);
 
-      // Save to history
       await saveToHistory({
         originalBase64: `data:image/jpeg;base64,${image.base64}`,
         resultBase64: resultUrl,
@@ -74,6 +101,11 @@ export default function GenerateScreen() {
         styleLabel: selectedStyle.label,
         prompt: selectedStyle.prompt,
       });
+
+      if (!purchased) {
+        await incrementFreeUsage();
+        setFreeUsed((c) => c + 1);
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push({ pathname: '/result', params: { style: selectedStyle.id } });
@@ -85,7 +117,7 @@ export default function GenerateScreen() {
       abortRef.current = null;
       setLoading(false);
     }
-  }, [image, selectedStyle, strength, loading, router]);
+  }, [image, selectedStyle, strength, loading, router, purchased]);
 
   const canGenerate = image && selectedStyle && !loading;
 
@@ -156,6 +188,7 @@ export default function GenerateScreen() {
       )}
 
       <LoadingOverlay visible={loading} status={status} onCancel={handleCancel} />
+      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} onPurchased={() => setPurchased(true)} freeCount={freeUsed} freeLimit={FREE_LIMIT} />
     </ScrollView>
   );
 }
