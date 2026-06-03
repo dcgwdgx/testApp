@@ -13,7 +13,7 @@ import { getCachedPhoto, setCachedPhoto } from '../lib/photoCache';
 import { saveToHistory } from '../lib/history';
 import { STYLES, type Style } from '../lib/styles';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
-import { initPurchases, listenForPurchases, hasFreeGenerationsLeft, hasPurchased, incrementFreeUsage } from '../lib/purchases';
+import { initPurchases, listenForPurchases, canGenerate as checkCanGenerate, deductCredit, incrementFreeUsage, getFreeGenerationsUsed, getRemainingCredits } from '../lib/purchases';
 
 const FREE_LIMIT = 3;
 
@@ -26,18 +26,19 @@ export default function GenerateScreen() {
   const [status, setStatus] = useState('');
   const abortRef = useRef<AbortController | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [purchased, setPurchased] = useState(false);
   const [freeUsed, setFreeUsed] = useState(0);
+  const [credits, setCredits] = useState(0);
 
   useEffect(() => {
     initPurchases();
-    listenForPurchases(() => {
-      setPurchased(true);
+    listenForPurchases((added: number) => {
+      setCredits((c) => c + added);
       setShowPaywall(false);
     });
     (async () => {
-      const owned = await hasPurchased();
-      setPurchased(owned);
+      const [used, c] = await Promise.all([getFreeGenerationsUsed(), getRemainingCredits()]);
+      setFreeUsed(used);
+      setCredits(c);
     })();
   }, []);
 
@@ -64,13 +65,11 @@ export default function GenerateScreen() {
   const handleGenerate = useCallback(async () => {
     if (!image || !selectedStyle || loading) return;
 
-    // Check free usage
-    if (!purchased) {
-      const free = await hasFreeGenerationsLeft();
-      if (!free) {
-        setShowPaywall(true);
-        return;
-      }
+    // Check if can generate (free or credits)
+    const allowed = await checkCanGenerate();
+    if (!allowed) {
+      setShowPaywall(true);
+      return;
     }
 
     setLoading(true);
@@ -102,9 +101,14 @@ export default function GenerateScreen() {
         prompt: selectedStyle.prompt,
       });
 
-      if (!purchased) {
+      // Deduct: free first, then credits
+      const used = await getFreeGenerationsUsed();
+      if (used < FREE_LIMIT) {
         await incrementFreeUsage();
         setFreeUsed((c) => c + 1);
+      } else {
+        await deductCredit();
+        setCredits((c) => c - 1);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -117,7 +121,7 @@ export default function GenerateScreen() {
       abortRef.current = null;
       setLoading(false);
     }
-  }, [image, selectedStyle, strength, loading, router, purchased]);
+  }, [image, selectedStyle, strength, loading, router, freeUsed, credits]);
 
   const canGenerate = image && selectedStyle && !loading;
 
@@ -168,6 +172,17 @@ export default function GenerateScreen() {
         <StrengthSlider value={strength} onChange={setStrength} disabled={loading} />
       )}
 
+      {image && credits === 0 && freeUsed < FREE_LIMIT && (
+        <Text style={styles.freeCount}>
+          {freeUsed}/{FREE_LIMIT} free · {credits} paid remaining
+        </Text>
+      )}
+      {image && credits > 0 && (
+        <Text style={styles.freeCount}>
+          {credits} generation{credits !== 1 ? 's' : ''} remaining
+        </Text>
+      )}
+
       {image && (
         <TouchableOpacity
           style={[styles.generateBtn, !selectedStyle && styles.generateBtnDisabled]}
@@ -188,7 +203,7 @@ export default function GenerateScreen() {
       )}
 
       <LoadingOverlay visible={loading} status={status} onCancel={handleCancel} />
-      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} onPurchased={() => setPurchased(true)} freeCount={freeUsed} freeLimit={FREE_LIMIT} />
+      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} onPurchased={(added: number) => setCredits((c) => c + added)} />
     </ScrollView>
   );
 }
@@ -211,6 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary, borderRadius: Radius.lg,
     paddingVertical: Spacing.lg + 2, alignItems: 'center', marginTop: Spacing.sm,
   },
+  freeCount: { fontSize: FontSize.sm, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.sm },
   generateBtnDisabled: { backgroundColor: Colors.border },
   generateText: { color: Colors.background, fontSize: FontSize.lg, fontWeight: '700' },
   generateTextDisabled: { color: Colors.textMuted, fontSize: FontSize.lg, fontWeight: '600' },

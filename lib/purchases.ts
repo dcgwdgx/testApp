@@ -1,82 +1,94 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as InAppPurchases from 'expo-in-app-purchases';
-import { Platform } from 'react-native';
 
 const FREE_LIMIT = 3;
-const GENERATION_KEY = '@free_generations_used';
-const PURCHASED_KEY = '@has_purchased';
-const PRODUCT_ID = 'unlock_full';
+const CREDITS_KEY = '@remaining_credits';
 
-let productLoaded = false;
+interface Tier {
+  id: string;
+  label: string;
+  price: string;
+  credits: number;
+}
+
+export const TIERS: Tier[] = [
+  { id: 'gen_10',  label: '10 Generations',  price: '$0.99', credits: 10 },
+  { id: 'gen_30',  label: '30 Generations',  price: '$1.99', credits: 30 },
+  { id: 'gen_60',  label: '60 Generations',  price: '$2.99', credits: 60 },
+];
+
+const PRODUCT_IDS = TIERS.map((t) => t.id);
+let connected = false;
 
 export async function initPurchases() {
   try {
     await InAppPurchases.connectAsync();
-    const { results } = await InAppPurchases.getProductsAsync([PRODUCT_ID]);
-    if (results?.length) productLoaded = true;
-  } catch {
-    // StoreKit unavailable — skip (simulator / dev)
+    connected = true;
+    await InAppPurchases.getProductsAsync(PRODUCT_IDS);
+  } catch (err: any) {
+    console.log('IAP init error:', err?.message || err);
+  }
+}
+
+export async function getRemainingCredits(): Promise<number> {
+  const raw = await AsyncStorage.getItem(CREDITS_KEY);
+  return raw ? parseInt(raw, 10) : 0;
+}
+
+async function addCredits(n: number): Promise<void> {
+  const current = await getRemainingCredits();
+  await AsyncStorage.setItem(CREDITS_KEY, String(current + n));
+}
+
+export async function deductCredit(): Promise<void> {
+  const current = await getRemainingCredits();
+  if (current > 0) {
+    await AsyncStorage.setItem(CREDITS_KEY, String(current - 1));
   }
 }
 
 export async function getFreeGenerationsUsed(): Promise<number> {
-  const raw = await AsyncStorage.getItem(GENERATION_KEY);
+  // Track free usage separately, always 3 free before needing credits
+  const raw = await AsyncStorage.getItem('@free_used');
   return raw ? parseInt(raw, 10) : 0;
 }
 
 export async function incrementFreeUsage(): Promise<void> {
   const used = await getFreeGenerationsUsed();
-  await AsyncStorage.setItem(GENERATION_KEY, String(used + 1));
+  await AsyncStorage.setItem('@free_used', String(used + 1));
 }
 
-export async function hasFreeGenerationsLeft(): Promise<boolean> {
-  const used = await getFreeGenerationsUsed();
-  return used < FREE_LIMIT;
+export async function canGenerate(): Promise<boolean> {
+  const freeUsed = await getFreeGenerationsUsed();
+  if (freeUsed < FREE_LIMIT) return true;
+  const credits = await getRemainingCredits();
+  return credits > 0;
 }
 
-export async function hasPurchased(): Promise<boolean> {
-  // First check local storage
-  const cached = await AsyncStorage.getItem(PURCHASED_KEY);
-  if (cached === 'true') return true;
-
-  // Then check with IAP
-  try {
-    const { results } = await InAppPurchases.getPurchaseHistoryAsync();
-    return (results ?? []).some((p) => p.productId === PRODUCT_ID);
-  } catch {
-    return false;
-  }
-}
-
-export async function purchaseUnlock(): Promise<boolean> {
-  if (!productLoaded) {
-    await initPurchases();
+export async function purchaseTier(tierId: string): Promise<{ ok: boolean; message: string }> {
+  if (!connected) await initPurchases();
+  if (!connected) {
+    return { ok: false, message: 'Store connection failed. Check network or Apple ID login.' };
   }
   try {
-    await InAppPurchases.purchaseItemAsync(PRODUCT_ID);
-    return true;
+    await InAppPurchases.purchaseItemAsync(tierId);
+    return { ok: true, message: '' };
   } catch (err: any) {
-    console.log('IAP purchase error:', err?.message || err);
-    return false;
+    return { ok: false, message: err?.message || String(err) };
   }
 }
 
-export function listenForPurchases(onPurchased: () => void) {
+export function listenForPurchases(onPurchased: (credits: number) => void) {
   InAppPurchases.setPurchaseListener(async ({ responseCode, results }) => {
     if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
       for (const purchase of results) {
-        if (purchase.productId === PRODUCT_ID) {
-          await InAppPurchases.finishTransactionAsync(purchase, false);
-          await AsyncStorage.setItem(PURCHASED_KEY, 'true');
-          onPurchased();
+        const tier = TIERS.find((t) => t.id === purchase.productId);
+        if (tier) {
+          await InAppPurchases.finishTransactionAsync(purchase, true);
+          await addCredits(tier.credits);
+          onPurchased(tier.credits);
         }
       }
     }
   });
-}
-
-export function getProductPrice(): string {
-  // Will be populated by getProductsAsync in initPurchases
-  // Default fallback
-  return Platform.select({ ios: '$0.99', android: 'US$0.99', default: '$0.99' });
 }
