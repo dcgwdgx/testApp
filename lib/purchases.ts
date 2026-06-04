@@ -12,7 +12,7 @@ interface Tier {
 }
 
 export const TIERS: Tier[] = [
-  { id: 'gen_10',  label: '10 Generations',  price: '$0.99', credits: 10 },
+  { id: 'gen_10_1',  label: '10 Generations',  price: '$0.99', credits: 10 },
   { id: 'gen_30',  label: '30 Generations',  price: '$1.99', credits: 30 },
   { id: 'gen_60',  label: '60 Generations',  price: '$2.99', credits: 60 },
 ];
