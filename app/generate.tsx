@@ -174,7 +174,7 @@ export default function GenerateScreen() {
 
       {image && credits === 0 && freeUsed < FREE_LIMIT && (
         <Text style={styles.freeCount}>
-          {freeUsed}/{FREE_LIMIT} free · {credits} paid remaining
+          {freeUsed}/{FREE_LIMIT} free generations used
         </Text>
       )}
       {image && credits > 0 && (
@@ -199,6 +199,12 @@ export default function GenerateScreen() {
           ) : (
             <Text style={styles.generateTextDisabled}>Pick a style to continue</Text>
           )}
+        </TouchableOpacity>
+      )}
+
+      {image && (
+        <TouchableOpacity style={styles.creditsLink} onPress={() => setShowPaywall(true)}>
+          <Text style={styles.creditsLinkText}>Credits</Text>
         </TouchableOpacity>
       )}
 
@@ -227,6 +233,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg + 2, alignItems: 'center', marginTop: Spacing.sm,
   },
   freeCount: { fontSize: FontSize.sm, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.sm },
+  creditsLink: { alignItems: 'center', marginTop: Spacing.lg },
+  creditsLinkText: { fontSize: FontSize.sm, color: Colors.textMuted },
   generateBtnDisabled: { backgroundColor: Colors.border },
   generateText: { color: Colors.background, fontSize: FontSize.lg, fontWeight: '700' },
   generateTextDisabled: { color: Colors.textMuted, fontSize: FontSize.lg, fontWeight: '600' },
