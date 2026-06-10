@@ -65,61 +65,68 @@ export default function GenerateScreen() {
   const handleGenerate = useCallback(async () => {
     if (!image || !selectedStyle || loading) return;
 
-    // Check if can generate (free or credits)
-    const allowed = await checkCanGenerate();
-    if (!allowed) {
-      setShowPaywall(true);
-      return;
-    }
-
-    setLoading(true);
-    const controller = new AbortController();
-    abortRef.current = controller;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    // Failsafe: auto-dismiss loading after 3 minutes
+    const failsafe = setTimeout(() => {
+      setLoading(false);
+      setStatus('');
+      Alert.alert('Timeout', 'Generation took too long. Please try again.');
+    }, 180_000);
 
     try {
-      if (!image.base64) {
-        Alert.alert('Error', 'Image data is missing. Please re-upload your photo.');
-        abortRef.current = null;
-        setLoading(false);
+      const allowed = await checkCanGenerate();
+      if (!allowed) {
+        setShowPaywall(true);
         return;
       }
 
-      const resultUrl = await generatePortrait(
-        { imageBase64: image.base64, prompt: selectedStyle.prompt, strength, signal: controller.signal },
-        setStatus,
-      );
+      setLoading(true);
+      const controller = new AbortController();
+      abortRef.current = controller;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-      setCachedImage(resultUrl);
-      setCachedOriginalUri(image.uri);
+      try {
+        if (!image.base64) {
+          Alert.alert('Error', 'Image data is missing. Please re-upload your photo.');
+          return;
+        }
 
-      await saveToHistory({
-        originalBase64: `data:image/jpeg;base64,${image.base64}`,
-        resultBase64: resultUrl,
-        styleId: selectedStyle.id,
-        styleLabel: selectedStyle.label,
-        prompt: selectedStyle.prompt,
-      });
+        const resultUrl = await generatePortrait(
+          { imageBase64: image.base64, prompt: selectedStyle.prompt, strength, signal: controller.signal },
+          setStatus,
+        );
 
-      // Deduct: free first, then credits
-      const used = await getFreeGenerationsUsed();
-      if (used < FREE_LIMIT) {
-        await incrementFreeUsage();
-        setFreeUsed((c) => c + 1);
-      } else {
-        await deductCredit();
-        setCredits((c) => c - 1);
+        setCachedImage(resultUrl);
+        setCachedOriginalUri(image.uri);
+
+        saveToHistory({
+          originalBase64: `data:image/jpeg;base64,${image.base64}`,
+          resultBase64: resultUrl,
+          styleId: selectedStyle.id,
+          styleLabel: selectedStyle.label,
+          prompt: selectedStyle.prompt,
+        }).catch(() => {});
+
+        const used = await getFreeGenerationsUsed();
+        if (used < FREE_LIMIT) {
+          await incrementFreeUsage();
+          setFreeUsed((c) => c + 1);
+        } else {
+          await deductCredit();
+          setCredits((c) => c - 1);
+        }
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.push({ pathname: '/result', params: { style: selectedStyle.id } });
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Generation Failed', err.message || 'Something went wrong. Please try again.');
+      } finally {
+        abortRef.current = null;
+        setLoading(false);
       }
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push({ pathname: '/result', params: { style: selectedStyle.id } });
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Generation Failed', err.message || 'Something went wrong. Please try again.');
     } finally {
-      abortRef.current = null;
-      setLoading(false);
+      clearTimeout(failsafe);
     }
   }, [image, selectedStyle, strength, loading, router, freeUsed, credits]);
 
