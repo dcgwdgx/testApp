@@ -17,10 +17,11 @@ export default function Paywall({ visible, onClose, onPurchased }: Props) {
     setBuying(tierId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { ok, message } = await purchaseTier(tierId);
-    setBuying(null);
     if (ok) {
-      // Purchase listener will fire onPurchased
+      // Listener will fire onPurchased — but add safety timeout
+      setTimeout(() => setBuying(null), 10_000);
     } else {
+      setBuying(null);
       Alert.alert('Purchase Failed', message || 'Please try again.');
     }
   };

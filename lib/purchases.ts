@@ -80,15 +80,24 @@ export async function purchaseTier(tierId: string): Promise<{ ok: boolean; messa
 
 export function listenForPurchases(onPurchased: (credits: number) => void) {
   InAppPurchases.setPurchaseListener(async ({ responseCode, results }) => {
+    console.log('IAP listener:', JSON.stringify({ responseCode, count: results?.length }));
     if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
       for (const purchase of results) {
         const tier = TIERS.find((t) => t.id === purchase.productId);
-        if (tier) {
+        if (!tier) continue;
+        try {
           await InAppPurchases.finishTransactionAsync(purchase, true);
           await addCredits(tier.credits);
           onPurchased(tier.credits);
+        } catch (err: any) {
+          console.log('IAP finish error:', err?.message || err);
+          // Still try to add credits even if finishTransaction fails
+          try { await addCredits(tier.credits); } catch {}
+          onPurchased(tier.credits);
         }
       }
+    } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
+      // User dismissed the payment sheet — no action needed
     }
   });
 }
