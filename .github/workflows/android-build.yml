@@ -5,6 +5,10 @@ on:
     branches: [master]
     paths-ignore:
       - '.github/workflows/ios-build.yml'
+      - '*.md'
+      - '*.html'
+      - '*.mp4'
+      - 'screenshots/**'
   workflow_dispatch:
 
 jobs:
