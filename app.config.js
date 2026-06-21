@@ -42,6 +42,7 @@ module.exports = {
     },
     plugins: [
       'expo-router',
+      'react-native-iap',
       [
         'expo-image-picker',
         { photosPermission: 'We need access to your photo library so you can upload pet photos.' },
