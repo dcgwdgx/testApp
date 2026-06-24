@@ -41,7 +41,7 @@ jobs:
       - name: Submit to Google Play
         if: github.ref == 'refs/heads/master'
         run: |
-          APK=$(find . -name "*.apk" -type f | head -1)
+          APK=$(find . -name "*.aab" -type f | head -1)
           echo "Submitting $APK"
           echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > /tmp/google-play-key.json
           eas submit --platform android --path="$APK" --profile production --non-interactive
@@ -53,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PetPortraitAI-APK
-          path: '**/*.apk'
+          path: '**/*.aab'
