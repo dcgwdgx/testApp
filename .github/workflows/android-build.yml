@@ -41,16 +41,17 @@ jobs:
       - name: Submit to Google Play
         if: github.ref == 'refs/heads/master'
         run: |
-          APK=$(find . -name "*.aab" -type f | head -1)
-          echo "Submitting $APK"
+          AAB=$(find . -name "*.aab" -type f | head -1)
+          echo "Submitting $AAB"
           echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > /tmp/google-play-key.json
-          eas submit --platform android --path="$APK" --profile production --non-interactive
+          eas submit --platform android --path="$AAB" --profile production --non-interactive || \
+          node scripts/google-play-upload.js "$AAB"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
 
-      - name: Upload APK
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: PetPortraitAI-APK
+          name: PetPortraitAI-AAB
           path: '**/*.aab'
