@@ -33,7 +33,8 @@
       },
       "android": {
         "serviceAccountKeyPath": "/tmp/google-play-key.json",
-        "track": "production"
+        "track": "production",
+        "releaseStatus": "draft"
       }
     }
   }

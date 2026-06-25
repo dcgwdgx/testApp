@@ -13,8 +13,10 @@ if (!AAB_PATH) {
 }
 
 (async () => {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: KEY_FILE,
+  const key = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'));
+  const auth = new google.auth.JWT({
+    email: key.client_email,
+    key: key.private_key,
     scopes: ['https://www.googleapis.com/auth/androidpublisher'],
   });
 
