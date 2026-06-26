@@ -8,6 +8,7 @@ on:
       - '*.md'
       - '*.html'
       - '*.mp4'
+      - 'trigger.txt'
       - 'screenshots/**'
   workflow_dispatch:
 
