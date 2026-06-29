@@ -20,7 +20,7 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'],
+      permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
     },
     ios: {
       supportsTablet: false,
