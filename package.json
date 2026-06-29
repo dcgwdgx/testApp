@@ -30,9 +30,10 @@
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
-    "@googleapis/androidpublisher": "^36.0.0",
     "@types/react": "~19.1.0",
     "fastlane": "^0.0.9",
+    "google-auth-library": "^10.9.0",
+    "googleapis": "^173.0.0",
     "sharp": "^0.34.5",
     "typescript": "~5.9.2"
   },

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Upload AAB to Google Play directly (handles first submission)
-const fs = require('fs');
-const { google } = require('@googleapis/androidpublisher');
+const { writeFileSync, readFileSync, createReadStream } = require('fs');
+const { JWT } = require('google-auth-library');
+const { google } = require('googleapis');
 
 const AAB_PATH = process.argv[2];
 const PACKAGE = 'com.petportrait.ai';
-const KEY_FILE = process.env.GOOGLE_PLAY_KEY_FILE || '/tmp/google-play-key.json';
+const KEY_FILE = '/tmp/google-play-key.json';
 
 if (!AAB_PATH) {
   console.error('Usage: node google-play-upload.js <aab_path>');
@@ -13,8 +13,8 @@ if (!AAB_PATH) {
 }
 
 (async () => {
-  const key = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'));
-  const auth = new google.auth.JWT({
+  const key = JSON.parse(readFileSync(KEY_FILE, 'utf8'));
+  const auth = new JWT({
     email: key.client_email,
     key: key.private_key,
     scopes: ['https://www.googleapis.com/auth/androidpublisher'],
@@ -31,7 +31,7 @@ if (!AAB_PATH) {
   const result = await publisher.edits.bundles.upload({
     packageName: PACKAGE,
     editId,
-    media: { body: fs.createReadStream(AAB_PATH) },
+    media: { body: createReadStream(AAB_PATH) },
   });
   console.log('Bundle uploaded:', JSON.stringify(result.data));
 
