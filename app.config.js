@@ -14,6 +14,7 @@ module.exports = {
     newArchEnabled: true,
     android: {
       package: 'com.petportrait.ai',
+      versionCode: process.env.ANDROID_VERSION_CODE ? parseInt(process.env.ANDROID_VERSION_CODE, 10) : 1,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#FF6B35',
