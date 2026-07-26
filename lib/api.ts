@@ -16,19 +16,20 @@ interface ArkResponse {
   error?: { message: string; code: string };
 }
 
-async function fetchOnce(
-  { imageBase64, prompt, strength, signal }: GenerateParams,
-  attempt: number,
-): Promise<ArkResponse> {
+async function fetchOnce({
+  imageBase64,
+  prompt,
+  strength,
+  signal,
+}: GenerateParams): Promise<ArkResponse> {
   const controller = new AbortController();
   if (signal) {
     signal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   try {
-    const res = await fetch(API_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${ARK_API_KEY}`,
@@ -46,14 +47,15 @@ async function fetchOnce(
       signal: controller.signal,
     });
 
-    if (!res.ok) {
-      const body = await res.text();
+    if (!response.ok) {
+      const body = await response.text();
       let detail = '';
-      try { detail = ': ' + JSON.parse(body).error?.message; } catch {}
-      throw new Error(`Server error (${res.status})${detail || '. Please try again.'}`);
+      try {
+        detail = `: ${JSON.parse(body).error?.message}`;
+      } catch {}
+      throw new Error(`Server error (${response.status})${detail || '. Please try again.'}`);
     }
-
-    return res.json();
+    return response.json();
   } finally {
     clearTimeout(timeoutId);
   }
@@ -64,44 +66,30 @@ export async function generatePortrait(
   onProgress?: (status: string) => void,
 ): Promise<string> {
   onProgress?.('starting');
-
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
         onProgress?.(`processing (retry ${attempt})`);
-        await sleep(2000);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } else {
         onProgress?.('processing');
       }
 
-      const data = await fetchOnce(params, attempt);
+      const data = await fetchOnce(params);
+      if (data.error) throw new Error(data.error.message || 'Generation failed');
 
-      if (data.error) {
-        throw new Error(data.error.message || 'Generation failed');
-      }
-
-      const b64 = data.data?.[0]?.b64_json;
-      if (!b64) {
-        throw new Error('No image returned. Please try again.');
-      }
-
+      const image = data.data?.[0]?.b64_json;
+      if (!image) throw new Error('No image returned. Please try again.');
       onProgress?.('succeeded');
-      return `data:image/jpeg;base64,${b64}`;
-    } catch (err: any) {
-      lastError = err;
-      // Always retry on: timeout, network errors, server errors
-      // Never retry if user cancelled
-      if (err.name === 'AbortError' && params.signal?.aborted) throw err;
-      if (attempt < MAX_RETRIES) continue;
-      throw err;
+      return `data:image/jpeg;base64,${image}`;
+    } catch (error: any) {
+      lastError = error;
+      if (error.name === 'AbortError' && params.signal?.aborted) throw error;
+      if (attempt === MAX_RETRIES) throw error;
     }
   }
 
   throw lastError || new Error('Generation failed after retries. Please try again.');
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

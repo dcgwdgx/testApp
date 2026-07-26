@@ -1,8 +1,14 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { Colors } from '../lib/theme';
+import { trackEvent } from '../lib/analytics';
 
 export default function RootLayout() {
+  useEffect(() => {
+    void trackEvent('app_open');
+  }, []);
+
   return (
     <>
       <StatusBar style="dark" />

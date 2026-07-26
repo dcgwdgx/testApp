@@ -2,8 +2,9 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { STYLES } from '../lib/styles';
+import { FEATURED_STYLES, STYLES } from '../lib/styles';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
+import { trackEvent } from '../lib/analytics';
 
 export default function LandingScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LandingScreen() {
             style={styles.historyBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              void trackEvent('history_open', { source: 'home' });
               router.push('/history');
             }}
             accessibilityRole="button"
@@ -28,14 +30,14 @@ export default function LandingScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.hero}>Turn Your Pet Into a Masterpiece</Text>
+        <Text style={styles.hero}>Turn Their Story Into a Keepsake</Text>
         <Text style={styles.subtitle}>
-          AI-powered artistic portraits in seconds. Choose a style, upload a photo, and watch the magic.
+          Create heartfelt memorials, celebration cards, and frame-worthy pet portraits from one photo.
         </Text>
 
         <View style={styles.badges}>
-          <View style={styles.badge}><Text style={styles.badgeText}>5 Styles</Text></View>
-          <View style={styles.badge}><Text style={styles.badgeText}>Free to Try</Text></View>
+          <View style={styles.badge}><Text style={styles.badgeText}>{STYLES.length} Designs</Text></View>
+          <View style={styles.badge}><Text style={styles.badgeText}>1 Free Preview</Text></View>
           <View style={styles.badge}><Text style={styles.badgeText}>~60s</Text></View>
         </View>
 
@@ -44,6 +46,7 @@ export default function LandingScreen() {
           activeOpacity={0.8}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            void trackEvent('landing_cta');
             router.push('/generate');
           }}
           accessibilityRole="button"
@@ -53,10 +56,10 @@ export default function LandingScreen() {
         </TouchableOpacity>
 
         <View style={styles.divider} />
-        <Text style={styles.sectionTitle}>Style Gallery</Text>
+        <Text style={styles.sectionTitle}>Made for Meaningful Moments</Text>
 
         <View style={styles.gallery}>
-          {STYLES.map((style) => (
+          {FEATURED_STYLES.map((style) => (
             <View
               key={style.id}
               style={[styles.galleryItem, { backgroundColor: style.color + '18' }]}
@@ -67,7 +70,7 @@ export default function LandingScreen() {
               </View>
               <Text style={styles.galleryName}>{style.label}</Text>
               <Text style={styles.galleryDescription}>
-                {style.prompt.split(',')[0].replace(/style/g, '').trim()}
+                {style.description}
               </Text>
             </View>
           ))}

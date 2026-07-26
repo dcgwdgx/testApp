@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import ComparisonSlider from './ComparisonSlider';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
+import { trackEvent } from '../lib/analytics';
 
 interface Props {
   imageUrl: string;
@@ -37,6 +38,7 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
     try {
       const fileUri = await writeFile();
       await shareAsync(fileUri, { dialogTitle: 'Share your pet portrait' });
+      void trackEvent('result_shared');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
       if (err.message !== 'User cancelled') {
@@ -58,6 +60,7 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
       }
       const fileUri = await writeFile();
       await MediaLibrary.saveToLibraryAsync(fileUri);
+      void trackEvent('result_saved');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Saved!', 'Your portrait has been saved to your gallery.');
     } catch {
@@ -168,13 +171,13 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
         </TouchableOpacity>
       </View>
 
-      {/* Pro CTA */}
+      {/* Occasion CTA */}
       <View style={styles.cta}>
-        <Text style={styles.ctaIcon}>✨</Text>
-        <Text style={styles.ctaTitle}>Want HD without watermark?</Text>
-        <Text style={styles.ctaDesc}>Unlock full resolution downloads and 20+ more styles</Text>
+        <Text style={styles.ctaIcon}>🎁</Text>
+        <Text style={styles.ctaTitle}>Make the next moment special</Text>
+        <Text style={styles.ctaDesc}>Explore memorials, birthdays, holidays, wallpapers, and more.</Text>
         <View style={styles.ctaBadge}>
-          <Text style={styles.ctaBadgeText}>Coming Soon</Text>
+          <Text style={styles.ctaBadgeText}>24 designs available</Text>
         </View>
       </View>
     </View>

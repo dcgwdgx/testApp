@@ -5,6 +5,7 @@ import ResultView from '../components/ResultView';
 import { getCachedImage, getCachedOriginalUri } from '../lib/cache';
 import { getCachedPhoto } from '../lib/photoCache';
 import { Colors, Spacing } from '../lib/theme';
+import { trackEvent } from '../lib/analytics';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -14,6 +15,8 @@ export default function ResultScreen() {
   useEffect(() => {
     if (!imageUrl) {
       router.replace('/generate');
+    } else {
+      void trackEvent('result_viewed');
     }
   }, [imageUrl, router]);
 

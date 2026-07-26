@@ -7,6 +7,7 @@ import { loadHistory, deleteFromHistory, clearHistory, type HistoryEntry } from 
 import { setCachedImage } from '../lib/cache';
 import { setCachedPhoto } from '../lib/photoCache';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
+import { trackEvent } from '../lib/analytics';
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function HistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      void trackEvent('history_open', { source: 'screen' });
       refresh();
     }, [refresh]),
   );

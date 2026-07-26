@@ -13,9 +13,18 @@ import { getCachedPhoto, setCachedPhoto } from '../lib/photoCache';
 import { saveToHistory } from '../lib/history';
 import { STYLES, type Style } from '../lib/styles';
 import { Colors, FontSize, Spacing, Radius } from '../lib/theme';
-import { initPurchases, listenForPurchases, canGenerate as checkCanGenerate, deductCredit, incrementFreeUsage, getFreeGenerationsUsed, getRemainingCredits } from '../lib/purchases';
+import {
+  initPurchases,
+  listenForPurchases,
+  canGenerate as checkCanGenerate,
+  deductCredit,
+  incrementFreeUsage,
+  getFreeGenerationsUsed,
+  getRemainingCredits,
+} from '../lib/purchases';
+import { trackEvent } from '../lib/analytics';
 
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 1;
 
 export default function GenerateScreen() {
   const router = useRouter();
@@ -30,23 +39,36 @@ export default function GenerateScreen() {
   const [credits, setCredits] = useState(0);
 
   useEffect(() => {
-    initPurchases();
-    listenForPurchases((added: number) => {
-      setCredits((c) => c + added);
+    void initPurchases();
+    const unsubscribe = listenForPurchases((added) => {
+      setCredits((current) => current + added);
       setShowPaywall(false);
+    }, (message) => {
+      Alert.alert('Purchase Pending', message);
     });
-    (async () => {
-      const [used, c] = await Promise.all([getFreeGenerationsUsed(), getRemainingCredits()]);
-      setFreeUsed(used);
-      setCredits(c);
-    })();
+    void Promise.all([getFreeGenerationsUsed(), getRemainingCredits()]).then(
+      ([used, remaining]) => {
+        setFreeUsed(used);
+        setCredits(remaining);
+      },
+    );
+    return unsubscribe;
   }, []);
+
+  const openPaywall = useCallback(() => {
+    setShowPaywall(true);
+    void trackEvent('paywall_viewed', {
+      credits,
+      freeRemaining: Math.max(0, FREE_LIMIT - freeUsed),
+    });
+  }, [credits, freeUsed]);
 
   const handlePickImage = useCallback(async () => {
     try {
       const result = await pickAndResizeImage();
       setImage(result);
       setCachedPhoto(result);
+      void trackEvent('photo_selected');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (err: any) {
       if (err.message !== 'User cancelled') {
@@ -73,9 +95,8 @@ export default function GenerateScreen() {
     }, 180_000);
 
     try {
-      const allowed = await checkCanGenerate();
-      if (!allowed) {
-        setShowPaywall(true);
+      if (!(await checkCanGenerate())) {
+        openPaywall();
         return;
       }
 
@@ -90,8 +111,14 @@ export default function GenerateScreen() {
           return;
         }
 
+        void trackEvent('generate_started', { styleId: selectedStyle.id });
         const resultUrl = await generatePortrait(
-          { imageBase64: image.base64, prompt: selectedStyle.prompt, strength, signal: controller.signal },
+          {
+            imageBase64: image.base64,
+            prompt: selectedStyle.prompt,
+            strength,
+            signal: controller.signal,
+          },
           setStatus,
         );
 
@@ -109,16 +136,21 @@ export default function GenerateScreen() {
         const used = await getFreeGenerationsUsed();
         if (used < FREE_LIMIT) {
           await incrementFreeUsage();
-          setFreeUsed((c) => c + 1);
+          setFreeUsed((current) => current + 1);
         } else {
           await deductCredit();
-          setCredits((c) => c - 1);
+          setCredits((current) => Math.max(0, current - 1));
         }
 
+        void trackEvent('generate_succeeded', { styleId: selectedStyle.id });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.push({ pathname: '/result', params: { style: selectedStyle.id } });
       } catch (err: any) {
         if (err.name === 'AbortError') return;
+        void trackEvent('generate_failed', {
+          styleId: selectedStyle.id,
+          reason: err.message || 'unknown',
+        });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert('Generation Failed', err.message || 'Something went wrong. Please try again.');
       } finally {
@@ -128,7 +160,7 @@ export default function GenerateScreen() {
     } finally {
       clearTimeout(failsafe);
     }
-  }, [image, selectedStyle, strength, loading, router, freeUsed, credits]);
+  }, [image, selectedStyle, strength, loading, router, openPaywall]);
 
   const canGenerate = image && selectedStyle && !loading;
 
@@ -170,6 +202,7 @@ export default function GenerateScreen() {
         selectedId={selectedStyle?.id ?? null}
         onSelect={(s) => {
           setSelectedStyle(s);
+          void trackEvent('style_selected', { styleId: s.id, category: s.category });
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }}
         disabled={loading}
@@ -181,7 +214,7 @@ export default function GenerateScreen() {
 
       {image && credits === 0 && freeUsed < FREE_LIMIT && (
         <Text style={styles.freeCount}>
-          {freeUsed}/{FREE_LIMIT} free generations used
+          Your first preview is free
         </Text>
       )}
       {image && credits > 0 && (
@@ -210,13 +243,13 @@ export default function GenerateScreen() {
       )}
 
       {image && (
-        <TouchableOpacity style={styles.creditsLink} onPress={() => setShowPaywall(true)}>
-          <Text style={styles.creditsLinkText}>Credits</Text>
+        <TouchableOpacity style={styles.creditsLink} onPress={openPaywall}>
+          <Text style={styles.creditsLinkText}>Get portrait packs</Text>
         </TouchableOpacity>
       )}
 
       <LoadingOverlay visible={loading} status={status} onCancel={handleCancel} />
-      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} onPurchased={(added: number) => setCredits((c) => c + added)} />
+      <Paywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </ScrollView>
   );
 }
