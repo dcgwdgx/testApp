@@ -10,8 +10,9 @@ const videoSlideDir = resolve(outputDir, 'video-slides');
 await mkdir(screenshotDir, { recursive: true });
 await mkdir(videoSlideDir, { recursive: true });
 
-const W = 1290;
-const H = 2796;
+// App Store Connect's 6.5-inch screenshot slot accepts 1284 × 2778.
+const W = 1284;
+const H = 2778;
 const orange = '#FF6B35';
 const ink = '#171717';
 const muted = '#6E6A67';

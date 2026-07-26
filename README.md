@@ -28,6 +28,6 @@ basic funnel events are stored locally on the device.
 
 ## Store assets
 
-Run `npm run store:assets` to rebuild the five 1290×2796 screenshots,
+Run `npm run store:assets` to rebuild the five 1284×2778 screenshots,
 1080×1920 video slides, and the 1024×500 Google Play feature graphic from the
 approved source portraits in `store-assets/source`.
