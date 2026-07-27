@@ -50,7 +50,7 @@ export default function ResultView({ imageUrl, originalUri, onRetry, onNewStyle,
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== 'granted') {
         Alert.alert('Permission Needed', 'Allow photo library access in Settings.', [
           { text: 'Cancel', style: 'cancel' },

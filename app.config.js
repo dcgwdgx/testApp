@@ -21,7 +21,12 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
+      blockedPermissions: [
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.READ_MEDIA_IMAGES',
+        'android.permission.READ_MEDIA_VIDEO',
+        'android.permission.READ_MEDIA_AUDIO',
+      ],
     },
     ios: {
       supportsTablet: false,
@@ -46,13 +51,17 @@ module.exports = {
       'react-native-iap',
       [
         'expo-image-picker',
-        { photosPermission: 'We need access to your photo library so you can upload pet photos.' },
+        {
+          photosPermission: 'We need access to your photo library so you can upload pet photos.',
+          microphonePermission: false,
+        },
       ],
       [
         'expo-media-library',
         {
           photosPermission: 'We need permission to save your AI portraits to your gallery.',
           savePhotosPermission: 'We need permission to save your AI portraits to your gallery.',
+          granularPermissions: [],
         },
       ],
     ],
