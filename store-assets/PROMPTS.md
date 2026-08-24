@@ -1,33 +1,32 @@
-# Store asset source prompts
+# 商店素材源图与生成说明
 
-These four project-bound images were created with the built-in image generation
-tool. The three generated results use `golden-original.png` as the identity
-reference.
+本目录中的 4 张项目专用源图由图像生成工具制作。皇家肖像、圣诞卡片和纪念场景都以 `golden-original.png` 为宠物身份参考，必须尽量保持同一只金毛犬的脸部、毛色、表情和标志性特征一致。
 
-## Original
+## 原始肖像
 
-Photorealistic professional studio portrait of one distinctive golden
-retriever: honey-gold fur, darker ears, a small white chest patch, dark brown
-eyes, and a teal collar with a round brass tag. Centered square framing, soft
-natural window light, warm-gray seamless background, no text or watermark.
+一只具有明确辨识特征的金毛犬专业棚拍照片：蜂蜜金色毛发、颜色略深的耳朵、小块白色胸毛、深棕色眼睛，以及带圆形黄铜铭牌的蓝绿色项圈。主体居中、正方形构图，使用柔和自然窗光和暖灰色无缝背景，不包含文字或水印。
 
-## Royal portrait
+## 皇家肖像
 
-Preserve the exact dog's face, markings, expression, and square composition.
-Transform it into a museum-quality classical oil portrait in a grand palace,
-with a natural deep-navy period coat, restrained gold embroidery, and a small
-crown. No people, text, logos, frame border, or copyrighted characters.
+保持同一只狗的脸部、标记、表情和正方形构图。将它转换为宫殿环境中的博物馆级古典油画肖像，穿自然的深海军蓝色时代服装，使用克制的金色刺绣和小型王冠。不得出现人物、文字、标志、画框边缘或受版权保护的角色。
 
-## Christmas card
+## 圣诞卡片
 
-Preserve the exact dog's identity and square composition. Create a premium
-photorealistic Christmas-card scene with a deep-red bow tie, evergreen garland,
-warm fairy lights, a subtle snowy window, and one small wrapped gift. No text,
-logo, watermark, Santa costume, or extra animals.
+保持同一只狗的身份特征和正方形构图。制作高品质写实圣诞卡片场景，加入深红色领结、常青树花环、暖色串灯、带少量积雪的窗户以及一个小礼物。不得出现文字、标志、水印、圣诞老人服装或额外动物。
 
-## Memorial keepsake
+## 纪念场景
 
-Preserve the exact dog's identity and square composition. Place it in a softly
-glowing meadow at sunrise with cream wildflowers, warm mist, and a subtle
-rainbow in distant clouds. Keep the mood comforting and tasteful. No text,
-logo, watermark, wings, halo, grave markers, or extra animals.
+保持同一只狗的身份特征和正方形构图。将它放在日出时柔和发光的草地中，加入奶油色野花、暖色薄雾和远处云层里的淡彩虹。整体情绪应温柔、安慰且克制。不得出现文字、标志、水印、翅膀、光环、墓碑或额外动物。
+
+## 最终产物
+
+运行 `npm run store:assets` 后，脚本会把已批准的源图合成为 `store-assets/final` 下的最终素材：
+
+- 5 张 1284×2778 商店截图，顺序从核心价值、代表场景到价格说明。
+- 1 张 1024×500 Google Play 置顶大图。
+- 1 个 1080×1920 竖版 MP4 预览视频。
+- 5 张视频静态画面，存放在 `video-slides`。
+
+目前手机、7 英寸平板和 10 英寸平板商品详情共用这 5 张截图。Google Play 要求进行 AI 资源声明时，应标记生成或编辑过的置顶大图和截图。
+
+MP4 是视频母版。Google Play 商品详情的视频字段需要公开或“不公开列出”的 YouTube 地址，并且必须关闭广告和年龄限制。

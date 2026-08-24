@@ -1,3 +1,4 @@
-# Expo HAS CHANGED
+# Expo SDK 54 注意事项
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
+在编写任何代码之前，必须先阅读 Expo SDK 54 的准确版本文档：
+https://docs.expo.dev/versions/v54.0.0/
